@@ -6,8 +6,15 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent, // needed if you read message text
+    GatewayIntentBits.GuildMembers,   // optional, only if you track member events
+    GatewayIntentBits.GuildMessageReactions // optional, for reactions
+  ]
 });
+
 
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const API_URL = process.env.API_URL;
