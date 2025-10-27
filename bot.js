@@ -5,44 +5,68 @@ import FormData from "form-data";
 import dotenv from "dotenv";
 dotenv.config();
 
+// -----------------------------
+// Create Discord Client
+// -----------------------------
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent, // needed if you read message text
-    GatewayIntentBits.GuildMembers,   // optional, only if you track member events
-    GatewayIntentBits.GuildMessageReactions // optional, for reactions
+    GatewayIntentBits.MessageContent, // Required to read message text
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessageReactions
   ]
 });
-
 
 const CHANNEL_ID = process.env.CHANNEL_ID;
 const API_URL = process.env.API_URL;
 
-client.on("ready", () => console.log(`Logged in as ${client.user.tag}`));
+// -----------------------------
+// On bot ready
+// -----------------------------
+client.on("ready", () => {
+  console.log(`Aaron Core Bot logged in as ${client.user.tag}`);
+});
 
-client.on("messageCreate", async message => {
-  if (message.channel.id !== CHANNEL_ID || message.author.bot) return;
-  if (!message.attachments.size) return;
-
-  const file = message.attachments.first();
+// -----------------------------
+// Track messages
+// -----------------------------
+client.on("messageCreate", async (message) => {
+  // Ignore bots & other channels
+  if (message.author.bot) return;
+  if (message.channel.id !== CHANNEL_ID) return;
 
   try {
-    const response = await fetch(file.url);
-    const buffer = await response.arrayBuffer();
-    const tempFilePath = `./uploads/${Date.now()}_${file.name}`;
-    fs.writeFileSync(tempFilePath, Buffer.from(buffer));
+    let filePath = null;
 
+    // If message has attachments (images/files)
+    if (message.attachments.size > 0) {
+      const file = message.attachments.first();
+      const response = await fetch(file.url);
+      const buffer = await response.arrayBuffer();
+      filePath = `./uploads/${Date.now()}_${file.name}`;
+      fs.writeFileSync(filePath, Buffer.from(buffer));
+    }
+
+    // Prepare form data
     const form = new FormData();
     form.append("username", message.author.tag);
     form.append("content", message.content || "");
-    form.append("file", fs.createReadStream(tempFilePath));
+    if (filePath) form.append("file", fs.createReadStream(filePath));
 
+    // Send to API
     await fetch(`${API_URL}/upload`, { method: "POST", body: form });
-    fs.unlinkSync(tempFilePath);
+
+    // Delete temp file
+    if (filePath) fs.unlinkSync(filePath);
+
+    console.log(`Tracked message from ${message.author.tag}`);
   } catch (err) {
-    console.error(err);
+    console.error("Failed to upload message:", err);
   }
 });
 
+// -----------------------------
+// Login
+// -----------------------------
 client.login(process.env.BOT_TOKEN);
