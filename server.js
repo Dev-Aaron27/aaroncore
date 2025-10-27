@@ -71,7 +71,7 @@ app.get("/posts", async (req, res) => {
   }
 });
 
-// Health check for Render
+// Health check
 app.get("/", (req, res) => res.send("Aaron Core API is running"));
 
 const PORT = process.env.PORT || 3000;
